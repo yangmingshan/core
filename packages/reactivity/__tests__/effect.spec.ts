@@ -239,6 +239,32 @@ describe('reactivity/effect', () => {
     expect(hasDummy).toBe(false)
   })
 
+  it('should observe chained side effect computed', () => {
+    let dummy
+
+    const foo = ref<{ bar?: { baz?: string[] } }>({})
+
+    const qux = computed(() => {
+      foo.value.bar ??= {}
+      return foo.value.bar
+    })
+
+    const baz = computed(() => {
+      qux.value.baz ??= []
+      return qux.value.baz
+    })
+
+    baz.value
+    expect(
+      'Computed is still dirty after getter evaluation,',
+    ).toHaveBeenWarned()
+
+    effect(() => (dummy = baz.value.length))
+
+    baz.value.push('value')
+    expect(dummy).toBe(1)
+  })
+
   it('should not observe well-known symbol keyed properties', () => {
     const key = Symbol.isConcatSpreadable
     let dummy
